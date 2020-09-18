@@ -40,14 +40,15 @@ Usage
 
    .. code:: bash
 
-       $ wget -O ggm.xml https://github.com/Gemeente-Delft/Gemeentelijk-Gegevensmodel/raw/master/gemeentelijk%20gegevensmodel.xml
+       $ wget -O ggm_original.xml https://github.com/Gemeente-Delft/Gemeentelijk-Gegevensmodel/raw/master/gemeentelijk%20gegevensmodel.xml
+       $ iconv -f utf-8 -t ascii -c ggm_original.xml -o ggm.xml
 
 2. Run the converter on the downloaded XML file and target a specific class by 
    its name:
 
    .. code:: bash
 
-       $ imvertorlite -f ggm.xml -n Boom
+       $ python imvertorlite -f ggm.xml -n Boom
 
 3. The result is in a file named after the class name, in this case 
    ``boom.json``.
