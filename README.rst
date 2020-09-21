@@ -28,7 +28,7 @@ Installation
 
 .. code:: bash
 
-    $ git@github.com:maykinmedia/imvertor-lite.git
+    $ git clone git@github.com:maykinmedia/imvertor-lite.git
     $ cd imvertor-lite
     $ python3 -m venv env
     $ source env/bin/activate
