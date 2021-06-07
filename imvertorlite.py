@@ -98,7 +98,7 @@ def convert_clazz(res, clazz):
 
     # Convert the schema to JSON.
     output = json.dumps(schema, indent=2)
-    with open(f"{schema['title'].lower()}.json", "w") as f:
+    with open(f"{schema['title'].lower().replace("/", "-")}.json", "w") as f:
         f.write(output)
 
 
