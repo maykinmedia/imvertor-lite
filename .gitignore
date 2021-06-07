@@ -25,6 +25,7 @@ docs/_build
 # Environment
 local.py
 /env/
+/venv/
 /media/
 /static/
 /mail/

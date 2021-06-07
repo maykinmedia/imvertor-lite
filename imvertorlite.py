@@ -1,105 +1,159 @@
 import json
-
+import sys
 import click
-from lxml import etree
-
-from utils import type_conversion
-
-NAMESPACES = {"UML": "omg.org/UML1.3"}
+from bs4 import BeautifulSoup, ResultSet, Tag
+from utils import type_conversion, type_convert_dictionary
+import cchardet
 
 
-def convert_clazz(res, clazz):
+def get_initial_value(element: Tag):
+    initial = element.select_one("initial").get("body")
+    if initial:
+        return initial
+    else:
+        return None
+
+
+def extract_properties(attr: Tag):
+    attr_name = attr.get("name")
+    attr_dict = {
+        "$id": f"#/properties/{attr_name}",
+        "title": f"{attr_name}",
+    }
+
+    attr_props = attr.select_one("properties")
+    attr_dict.update(
+        type_convert_dictionary(attr_props.attrs))
+
+    initial_value = get_initial_value(attr)
+    if initial_value:
+        attr_dict["default"] = type_conversion(initial_value)
+
+    attr_type = attr_props.get("type")
+    if attr_type:
+        attr_dict["type"] = type_conversion(attr_type)
+
+    stereotype = attr.select_one("stereotype")
+    if stereotype:
+        attr_dict["stereotype"] = stereotype.get("stereotype")
+
+    documentation = attr.select_one("documentation")
+    if documentation:
+        attr_dict["description"] = documentation.get("value")
+
+    tags = attr.select_one("tags").select("tag")
+    if tags:
+        attr_dict["tags"] = [{"name": tag.get("name"),
+                              "value": tag.get("value"),
+                              "notes": tag.get("notes")} for tag in tags]
+
+    return attr_dict
+
+
+def generate_schema(soup: BeautifulSoup, base: BeautifulSoup, attrs: ResultSet):
     """
     Converts a specific UML class to a JSON schema.
 
-    @param res: The entire `lxml` tree to resolve references.
-    @param clazz: The UML class `lxml` element.
+    @param soup: The base soup of the XML file to resolve references.
+    @param base: The base UML class (BeautifulSoup object).
+    @param attrs: A ResultSet (list of elements) containing all the individual properties.
     """
-
-    # Grab all the key-value pairs on the UML class. These contain most of the
-    # information needed for defining the schema.
-    tagged_values = {
-        tv.get("tag"): tv.get("value")
-        for tv in clazz.xpath(
-            "UML:ModelElement.taggedValue/UML:TaggedValue", namespaces=NAMESPACES
-        )
-    }
 
     # Create a base schema.
     schema = {
         "$schema": "http://json-schema.org/draft-07/schema",
         "$id": "https://objecttypes.vng.cloud/schema.json",
-        "type": "object",
-        "title": clazz.get("name"),
-        "description": tagged_values.get("documentation", None),
-        "default": {},
-        # TODO: An example would be nice.
-        "examples": [],
+        "title": base.get("name"),
         # Properties are added below.
         "properties": {},
-        # TODO: Unsure how EA indicates a required attribute.
-        "required": [],
         # By default, don't allow for additional properties.
         "additionalProperties": False,
+        "type": "object",
     }
-
-    # Iterate over all attributes of the UML class and convert them to 
-    # properties.
-    attributes = clazz.xpath(
-        "UML:Classifier.feature/UML:Attribute", namespaces=NAMESPACES
+    schema.update(
+        type_convert_dictionary(base.select_one("properties").attrs)
     )
-    for attr in attributes:
-        prop_title = attr.get("name")
-        prop_name = prop_title.lower()
+    schema.update(
+        type_convert_dictionary(base.select_one("project").attrs)
+    )
 
-        # Again, key-value pairs but this time on the attribute-level. These 
-        # contain the information to define the property.
-        tagged_values = {
-            tv.get("tag"): tv.get("value")
-            for tv in attr.xpath(
-                "UML:ModelElement.taggedValue/UML:TaggedValue", namespaces=NAMESPACES
-            )
-        }
+    schema['description'] = schema.pop('documentation')
 
-        # Create the schema property.
-        prop = {
-            "$id": f"#/properties/{prop_name}",
-            "type": type_conversion(tagged_values.get("type")),
-            "title": f"{prop_title}",
-            "description": tagged_values.get("description", ""),
-            # "default": 0.0,
-            "examples": [],
-        }
+    for attr in attrs:
+        attr_dict = extract_properties(attr)
 
-        # Handle enumerations as a special case.
-        prop_stereotype = attr.xpath(
-            "UML:ModelElement.stereotype/UML:Stereotype/@name", namespaces=NAMESPACES
-        )
-        if len(prop_stereotype) > 0 and prop_stereotype[0] == "enum":
-            enum_class_name = tagged_values.get("type")
-            enum_values = res.xpath(
-                f'//UML:Class[@name="{enum_class_name}"]/UML:Classifier.feature/UML:Attribute/@name',
-                namespaces=NAMESPACES,
-            )
+        attr_name = attr_dict.get("title")
+        schema["properties"][attr_name] = attr_dict
 
-            # Deduplicate items.
-            enum_values = list(set(enum_values))
+        if attr_dict.get("stereotype") == "enum":
+            enum = soup.select_one(f'element[name="enum_{attr_name}"]')
+            if enum:
+                enum_list = list(set([a.get('name') for a in enum.select("attribute")]))
+                schema["properties"][attr_name]["examples"] = [enum_list[0]]
+                schema["properties"][attr_name]["enum"] = enum_list[:]  # copy the list
 
-            # Some enumerations are empty... but are required to be filled by
-            # JSON schema.
-            if not enum_values:
-                enum_values = ["TODO"]
+                # Convert the schema to JSON.
+                output = json.dumps(schema, indent=2)
+                with open(f"{schema['title'].lower()}.json", "w") as f:
+                    f.write(output)
 
-            prop["enum"] = enum_values
-            prop["examples"] = [enum_values[0]]
 
-        # Add the property to the schema.
-        schema["properties"][prop_name] = prop
+def process_enterprise_architect(file_name, class_name, encoding):
+    """
+    Process the enteprise architect format (XML)
 
-    # Convert the schema to JSON.
-    output = json.dumps(schema, indent=2)
-    with open(f"{schema['title'].lower().replace("/", "-")}.json", "w") as f:
-        f.write(output)
+    @param soup: The base soup of the XML file to resolve references.
+    @param base: The base UML class (BeautifulSoup object).
+    @param attrs: A ResultSet (list of elements) containing all the individual properties.
+    """
+
+    with open(file_name, "r", encoding=encoding if encoding else "latin-1") as f:
+        data = f.read()
+
+    soup = BeautifulSoup(data, "lxml")
+
+    if class_name:
+        base_list = soup.find_all('element', {'xmi:type': 'uml:Class', 'name': class_name})
+    else:
+        # TODO: Filter out useful classes.
+        base_list = soup.find_all('element', {'xmi:type': 'uml:Class'})
+
+    for base in base_list:
+        attrs = base.select("attribute")
+        generate_schema(soup, base, attrs)
+
+
+def process_amsterdam_schema(file_name, encoding='utf-8'):
+    """
+    Process the Amsterdam Schema format (JSON)
+
+    @param file_name: The name of the JSON file.
+    @param encoding: The encoding of the given JSON file (Default: "utf-8").
+    """
+
+    with open(file_name, "r", encoding=encoding) as f:
+        obj = json.load(f)
+
+    schemas = obj['tables']
+    for schema in schemas:
+        schema['properties'] = schema.pop('schema')
+        schema['type'] = 'object'
+
+        for key in list(schema['properties'].keys()):
+            if key not in ['properties']:
+                schema[key] = schema['properties'].pop(key)
+
+        properties = schema['properties'].pop('properties')
+        for key, dic in properties.items():
+            if key not in ['schema']:
+                dic['$id'] = f'#/properties/{key}'
+                dic['title'] = key
+                schema['properties'][key] = dic
+
+        schema['required'].remove('schema')  # Remove 'schema' property
+
+        with open(f"{schema['title'].lower()}.json", "w") as f:
+            json.dump(schema, f, indent=2)
 
 
 @click.command()
@@ -107,30 +161,28 @@ def convert_clazz(res, clazz):
     "file_name",
     "--file",
     "-f",
-    type=click.File("r"),
     required=True,
-    help="An XML export from Enterprise Architect.",
+    help="Supported formats: Enterprise Architect XML, Amsterdam Schema JSON.",
 )
 @click.option(
     "class_name", "--name", "-n", help="The UML class name of the object to export."
 )
-def convert(file_name, class_name=None):
+@click.option(
+    "encoding", "--encoding", "-e", help="Specify the encoding of the XML file (optional).",
+)
+def convert(file_name, class_name=None, encoding=None):
     """
     Exports one or more UML classes from an Enterprise Architect XML export to 
     JSON Schema.
     """
-    res = etree.parse(file_name)
 
-    if class_name:
-        selector = f'[@name="{class_name}"]'
+    if file_name.endswith('.json'):
+        process_amsterdam_schema(file_name, encoding)
+    elif file_name.endswith('.xml'):
+        process_enterprise_architect(file_name, class_name, encoding)
     else:
-        # TODO: Filter out usefull classes.
-        selector = ""
-
-    clazzes = res.xpath(f"//UML:Class{selector}", namespaces=NAMESPACES)
-
-    for clazz in clazzes:
-        convert_clazz(res, clazz)
+        print('Unsupported format.')
+        sys.exit(1)
 
 
 if __name__ == "__main__":

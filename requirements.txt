@@ -1,2 +1,4 @@
 click
 lxml
+bs4
+cchardet # speed improvements for bs4
