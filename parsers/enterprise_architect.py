@@ -18,6 +18,18 @@ class EnterpriseArchitect(BaseParser):
         else:
             return None
 
+    @staticmethod
+    def get_example(attr_type):
+        """Set an example on the base schema based on the attribute type."""
+        if attr_type == "string":
+            return random.choice(["foo", "bar", "baz"])
+        elif attr_type == "boolean":
+            return random.choice([True, False])
+        elif attr_type == "integer":
+            return random.randint(1, 100)
+        elif attr_type == "number":
+            return random.uniform(1, 100)
+
     def extract_properties(self, attr: Tag):
         attr_name = attr.get("name")
         attr_dict = {
@@ -51,17 +63,6 @@ class EnterpriseArchitect(BaseParser):
                                   "notes": tag.get("notes")} for tag in tags]
 
         return attr_dict
-
-    def get_example(self, attr_type):
-        """Set an example on the base schema based on the attribute type."""
-        if attr_type == "string":
-            return random.choice(["foo", "bar", "baz"])
-        elif attr_type == "boolean":
-            return random.choice([True, False])
-        elif attr_type == "integer":
-            return random.randint(1, 100)
-        elif attr_type == "number":
-            return random.uniform(1, 100)
 
     def process(self, file_name, class_name, encoding, **kwargs):
         """

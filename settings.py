@@ -1,4 +1,4 @@
-ATTRIBUTE_BLACKLIST = [
+ATTRIBUTE_BLACKLIST = {
     "derived",
     "precision",
     "collection",
@@ -22,4 +22,4 @@ ATTRIBUTE_BLACKLIST = [
     "complexity",
     "status",
     "stereotype",
-]
+}
