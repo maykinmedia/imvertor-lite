@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup, ResultSet, Tag
 import cchardet
 
 from parsers import BaseParser
-from utils import type_convert_dictionary, type_conversion
+from utils import type_convert_dictionary, type_conversion, filter_list_duplicates
 
 
 class EnterpriseArchitect(BaseParser):
@@ -107,7 +107,9 @@ class EnterpriseArchitect(BaseParser):
             # By default, don't allow for additional properties.
             "additionalProperties": False,
             "type": "object",
-            "examples": [],
+            "examples": [
+                {}
+            ],
         }
 
         properties_dict = self.filter_attributes(base.select_one("properties").attrs)
@@ -128,14 +130,14 @@ class EnterpriseArchitect(BaseParser):
             if attr_dict.get("stereotype") == "enum":
                 enum = soup.select_one(f'element[name="enum_{attr_name}"]')
                 if enum:
-                    enum_list = list(set([a.get("name") for a in enum.select("attribute")]))
+                    enum_list = filter_list_duplicates([a.get("name") for a in enum.select("attribute")])
                     attr_dict["enum"] = enum_list[:]  # copy the list
                     example = enum_list[0]
 
             if not example:
                 example = self.get_example(attr_dict.get("type"))
 
-            schema["examples"].append({attr_name: example})
+            schema["examples"][0][attr_name] = example
             schema["properties"][attr_name] = self.filter_attributes(attr_dict)
 
         # Convert the schema to JSON.
