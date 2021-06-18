@@ -37,7 +37,7 @@ Installation
 Usage
 =====
 
-1. Get an export of an file provided by a municipality. For example, as provided
+1. Get an export of a file provided by a municipality. For example, as provided
    by the municipality of Delft in their Gemeentelijk Gegevensmodel using Enterprise Architect:
 
    .. code:: bash
