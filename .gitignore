@@ -25,10 +25,10 @@ docs/_build
 # Environment
 local.py
 /env/
+/venv/
 /media/
 /static/
 /mail/
 /log/*.log*
 /log/nginx/*.log*
 .env
-
