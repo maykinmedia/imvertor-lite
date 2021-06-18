@@ -1,7 +1,0 @@
-# Example template
-
-- Schema: {{$schema}}
-- ID: {{$id}}
-- Title: {{title}}
-- Description: {{description}}
-

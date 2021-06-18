@@ -51,17 +51,12 @@ def convert(file_name,
         print("Unsupported format.")
         sys.exit(1)
 
-    p = parser()
-
-    schema = p.process(
+    p = parser(readme_template=readme_template)
+    p.process(
         file_name=file_name,
         class_name=class_name,
         encoding=encoding,
-        readme_template=readme_template,
     )
-
-    # Convert the schema to JSON.
-    p.export_schema_as_json(schema, f"{schema['title'].lower()}.json")
 
     sys.exit(0)
 
