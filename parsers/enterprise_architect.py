@@ -138,7 +138,4 @@ class EnterpriseArchitect(BaseParser):
             schema["examples"].append({attr_name: example})
             schema["properties"][attr_name] = self.filter_attributes(attr_dict)
 
-        # Convert the schema to JSON.
-        output = json.dumps(schema, indent=2)
-        with open(f"{schema['title'].lower()}.json", "w") as f:
-            f.write(output)
+        return schema
