@@ -1,7 +1,7 @@
 import json
 
 from parsers import BaseParser
-from utils import remove_keys_from_dict
+from utils import remove_keys_from_dict, lowercase_first_letter
 
 
 class AmsterdamSchema(BaseParser):
@@ -47,9 +47,11 @@ class AmsterdamSchema(BaseParser):
             properties = schema["properties"].pop("properties")
             for key, dic in properties.items():
                 if key not in ["schema"]:
-                    dic["$id"] = f"#/properties/{key}"
+                    camelcase_key = lowercase_first_letter(key)
+
+                    dic["$id"] = f"#/properties/{camelcase_key}"
                     dic["title"] = key
-                    schema["properties"][key] = self.filter_attributes(dic)
+                    schema["properties"][camelcase_key] = self.filter_attributes(dic)
 
             schema["required"].remove("schema")  # Remove "schema" property
             schema["description"] = schema.pop("title")

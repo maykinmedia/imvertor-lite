@@ -37,3 +37,7 @@ def remove_keys_from_dict(dictionary: Dict, keys: List):
 
 def filter_list_duplicates(input_list: List):
     return list(dict.fromkeys(input_list))
+
+
+def lowercase_first_letter(string: str):
+    return string[0].lower() + string[1:]

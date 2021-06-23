@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup, ResultSet, Tag
 import cchardet
 
 from parsers import BaseParser
-from utils import type_convert_dictionary, type_conversion, filter_list_duplicates
+from utils import type_convert_dictionary, type_conversion, filter_list_duplicates, lowercase_first_letter
 
 
 class EnterpriseArchitect(BaseParser):
@@ -61,7 +61,6 @@ class EnterpriseArchitect(BaseParser):
     def extract_properties(self, attr: Tag):
         attr_name = attr.get("name")
         attr_dict = {
-            "$id": f"#/properties/{attr_name}",
             "title": f"{attr_name}",
         }
 
@@ -152,21 +151,22 @@ class EnterpriseArchitect(BaseParser):
 
         for attr in attrs:
             attr_dict = self.extract_properties(attr)
-
             attr_name = attr_dict.get("title")
-            example = None
 
+            camelcase_key = lowercase_first_letter(attr_name)
+
+            example = None
             if attr_dict.get("stereotype") == "enum":
                 enum = soup.select_one(f'element[name="enum_{attr_name}"]')
                 if enum:
                     enum_list = filter_list_duplicates([a.get("name") for a in enum.select("attribute")])
                     attr_dict["enum"] = enum_list[:]  # copy the list
                     example = enum_list[0]
-
             if not example:
                 example = self.get_example(attr_dict.get("type"))
 
-            schema["examples"][0][attr_name] = example
-            schema["properties"][attr_name] = self.filter_attributes(attr_dict)
+            attr_dict["$id"] = f"#/properties/{camelcase_key}"
+            schema["examples"][0][camelcase_key] = example
+            schema["properties"][camelcase_key] = self.filter_attributes(attr_dict)
 
         return schema
