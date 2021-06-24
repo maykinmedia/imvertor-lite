@@ -37,8 +37,8 @@ Installation
 Usage
 =====
 
-1. Get an XML export of an Enterprise Architect file. For example, as provided 
-   by the municipality of Delft in their Gemeentelijk Gegevensmodel:
+1. Get an export of a file provided by a municipality. For example, as provided
+   by the municipality of Delft in their Gemeentelijk Gegevensmodel using Enterprise Architect:
 
    .. code:: bash
 
@@ -50,9 +50,15 @@ Usage
 
    .. code:: bash
 
-       $ python imvertorlite -f ggm.xml -n Boom
+       $ python imvertorlite.py -f ggm.xml -n Boom -p enteprise_architect
 
-3. The result is in a file named after the class name, in this case 
+3. (Optionally) Generate a README file using your preferred template.
+
+   .. code:: bash
+
+       $ python imvertorlite.py -f ggm.xml -n Boom -p enteprise_architect -t templates/README-ea.md.template
+
+4. The result is in a file named after the class name, in this case
    ``boom.json``.
 
 

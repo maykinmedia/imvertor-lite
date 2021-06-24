@@ -1,0 +1,13 @@
+## {{title}}
+
+{{description}}
+
+- Stereotype: {{stereotype}}
+- Scope: {{scope}}
+- Version: {{version}}
+- Created: {{created}}
+- Modified: {{modified}}
+- Status: {{status}}
+
+__By {{author}}__
+

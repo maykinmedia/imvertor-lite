@@ -1,4 +1,5 @@
 import re
+from typing import List, Dict
 
 
 def isfloat(string):
@@ -6,8 +7,8 @@ def isfloat(string):
         return True
 
 
-def type_conversion(prop_type):
-    if not prop_type:
+def type_conversion(prop_type: str):
+    if not prop_type or not isinstance(prop_type, str):
         return None
 
     if prop_type.startswith("AN") or prop_type.startswith("enum_"):
@@ -26,5 +27,17 @@ def type_conversion(prop_type):
     return prop_type
 
 
-def type_convert_dictionary(dictionary):
+def type_convert_dictionary(dictionary: Dict):
     return {k: type_conversion(v) for k, v in dictionary.items()}
+
+
+def remove_keys_from_dict(dictionary: Dict, keys: List):
+    return {k: v for k, v in dictionary.items() if k not in keys}
+
+
+def filter_list_duplicates(input_list: List):
+    return list(dict.fromkeys(input_list))
+
+
+def lowercase_first_letter(string: str):
+    return string[0].lower() + string[1:]

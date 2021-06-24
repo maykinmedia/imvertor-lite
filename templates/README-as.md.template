@@ -1,0 +1,15 @@
+## {{title}}
+
+{{description}}
+
+- Version: {{version}}
+- License: {{license}}
+- Status: {{status}}
+- Theme: {{theme}}
+- Keywords: {{keywords}}
+- CRS: {{crs}}
+
+Published by {{publisher}}
+
+__By {{owner}}__
+
