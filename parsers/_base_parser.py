@@ -1,5 +1,7 @@
 import json
+import logging
 import os
+import re
 from typing import Dict
 
 
@@ -18,20 +20,29 @@ class BaseParser:
         return {k: v for k, v in attrs.items() if k not in self.attribute_blacklist}
 
     def get_schema_title(self, schema):
-        return schema[self.schema_title_key].lower()
+        return re.sub(
+            r'[<>:"/\\|?*]',  # Clean invalid characters
+            '_',
+            schema[self.schema_title_key].lower().strip(),
+        )
 
     def export_schema_as_json(self, schema: Dict, title: str):
-        with open(f"{title}/{title}{self.postfix}.json", "w") as f:
+        filename = f"{title}/{title}{self.postfix}.json"
+
+        with open(filename, "w") as f:
             json.dump(schema, f, indent=2)
 
     def write_readme_template(self, schema: Dict, title: str):
+        filename = f"{title}/README{self.postfix}.md"
+
         with open(self.readme_template, "r") as f:
             data = f.read()
 
         for key, val in schema.items():
             data = data.replace("{{%s}}" % key, str(val))
+        data = re.sub(r"{{.*?}}", "\\<Unknown\\>", data)  # Replace unknown values
 
-        with open(f"{title}/README{self.postfix}.md", "w") as f:
+        with open(filename, "w", encoding="utf-8") as f:
             f.write(data)
 
     def export_schema(self, schema):
@@ -45,3 +56,5 @@ class BaseParser:
 
         schema = self.filter_attributes(schema)
         self.export_schema_as_json(schema, title)
+
+        logging.info(f'Schema "{title}" successfully exported.')

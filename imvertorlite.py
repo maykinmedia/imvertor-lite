@@ -67,4 +67,6 @@ def convert(file_name,
 
 
 if __name__ == "__main__":
+    import logging.config
+    logging.config.fileConfig("logging.conf")
     convert()
