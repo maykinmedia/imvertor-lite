@@ -4,6 +4,7 @@ import random
 from bs4 import BeautifulSoup, ResultSet, Tag
 import cchardet
 
+from objects import Schema
 from parsers import BaseParser
 from utils import type_convert_dictionary, type_conversion, filter_list_duplicates, lowercase_first_letter
 
@@ -126,7 +127,7 @@ class EnterpriseArchitect(BaseParser):
         """
 
         # Create a base schema.
-        schema = {
+        schema = Schema({
             "$schema": "http://json-schema.org/draft-07/schema",
             "$id": f"https://github.com/open-objecten/objecttypes/{base.get('name').lower()}.json",
             "title": base.get("name"),
@@ -138,7 +139,7 @@ class EnterpriseArchitect(BaseParser):
             "examples": [
                 {}
             ],
-        }
+        })
 
         properties_dict = base.select_one("properties").attrs
         project_dict = base.select_one("project").attrs
@@ -146,7 +147,7 @@ class EnterpriseArchitect(BaseParser):
         schema.update(properties_dict)
         schema.update(project_dict)
 
-        schema["description"] = schema.pop("documentation")
+        schema["description"] = schema.safe_pop("documentation")
         type_convert_dictionary(schema)
 
         for attr in attrs:
